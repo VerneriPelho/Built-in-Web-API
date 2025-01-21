@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Search - Jikan API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .search-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .search-section input, .search-section select, .search-section button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 1rem;
+        }
+        .results {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .anime-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 250px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .anime-card img {
+            max-width: 100%;
+            border-bottom: 1px solid #ddd;
+        }
+        .anime-card h3 {
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Anime Search - Powered by Jikan API</h1>
+    </header>
+    <main>
+        <section class="search-section">
+            <input type="text" id="searchQuery" placeholder="Search for an anime...">
+            <select id="type">
+                <option value="">Type</option>
+                <option value="tv">TV</option>
+                <option value="movie">Movie</option>
+                <option value="ova">OVA</option>
+                <option value="special">Special</option>
+                <option value="ona">ONA</option>
+                <option value="music">Music</option>
+            </select>
+            <select id="status">
+                <option value="">Status</option>
+                <option value="airing">Airing</option>
+                <option value="complete">Complete</option>
+                <option value="upcoming">Upcoming</option>
+            </select>
+            <select id="rating">
+                <option value="">Rating</option>
+                <option value="g">G</option>
+                <option value="pg">PG</option>
+                <option value="pg13">PG-13</option>
+                <option value="r17">R-17</option>
+                <option value="r">R</option>
+                <option value="rx">Rx</option>
+            </select>
+            <input type="number" id="minScore" placeholder="Min Score" min="0" max="10">
+            <input type="number" id="maxScore" placeholder="Max Score" min="0" max="10">
+            <button id="searchButton">Search</button>
+        </section>
+        <section class="results" id="results"></section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Anime Search</p>
+    </footer>
+    <script>
+        const API_BASE = "https://api.jikan.moe/v4";
+
+        document.getElementById("searchButton").addEventListener("click", () => {
+            const query = document.getElementById("searchQuery").value;
+            const type = document.getElementById("type").value;
+            const status = document.getElementById("status").value;
+            const rating = document.getElementById("rating").value;
+            const minScore = document.getElementById("minScore").value;
+            const maxScore = document.getElementById("maxScore").value;
+
+            let url = `${API_BASE}/anime?q=${query}&type=${type}&status=${status}&rating=${rating}`;
+            if (minScore) url += `&min_score=${minScore}`;
+            if (maxScore) url += `&max_score=${maxScore}`;
+
+            fetchAnime(url);
+        });
+
+        function fetchAnime(url) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => displayResults(data.data))
+                .catch(error => console.error("Error fetching anime:", error));
+        }
+
+        function displayResults(animes) {
+            const resultsContainer = document.getElementById("results");
+            resultsContainer.innerHTML = "";
+
+            if (!animes || animes.length === 0) {
+                resultsContainer.innerHTML = "<p>No results found.</p>";
+                return;
+            }
+
+            animes.slice(0, 6).forEach(anime => {
+                const animeCard = document.createElement("div");
+                animeCard.classList.add("anime-card");
+
+                animeCard.innerHTML = `
+                    <img src="${anime.images.jpg.image_url}" alt="${anime.title}">
+                    <h3>${anime.title}</h3>
+                    <p>${anime.title_japanese}</p>
+                `;
+
+                resultsContainer.appendChild(animeCard);
+            });
+        }
+    </script>
+</body>
+</html>

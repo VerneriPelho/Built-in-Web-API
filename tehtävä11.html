@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sää & Taustakuvat</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-size: cover;
+      background-position: center;
+    }
+    h1 {
+      margin: 10px;
+      color: white;
+      text-shadow: 2px 2px 5px black;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+    .weather-info {
+      margin-top: 20px;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sää & Taustakuvat</h1>
+  <form id="weatherForm">
+    <input type="text" id="cityInput" placeholder="Kirjoita kaupunki" required>
+    <button type="submit">Hae sää</button>
+  </form>
+  <div id="weatherInfo" class="weather-info" style="display: none;">
+    <h2 id="cityName"></h2>
+    <p id="temperature"></p>
+    <p id="description"></p>
+    <p id="humidity"></p>
+    <p id="wind"></p>
+  </div>
+  <script>
+    const weatherForm = document.getElementById('weatherForm');
+    const cityInput = document.getElementById('cityInput');
+    const weatherInfo = document.getElementById('weatherInfo');
+    const cityName = document.getElementById('cityName');
+    const temperature = document.getElementById('temperature');
+    const description = document.getElementById('description');
+    const humidity = document.getElementById('humidity');
+    const wind = document.getElementById('wind');
+
+    const OPENWEATHER_API_KEY = '7d9c22b83fb4c0a10df5128da56f0aaa';
+    const UNSPLASH_API_KEY = 'your_unsplash_api_key';
+
+    weatherForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const city = cityInput.value.trim();
+      if (!city) return;
+
+      try {
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fi&appid=${OPENWEATHER_API_KEY}`
+        );
+        if (!weatherResponse.ok) throw new Error('Kaupunkia ei löydy');
+        const weatherData = await weatherResponse.json();
+
+        const { name, main, weather, wind: windData } = weatherData;
+        cityName.textContent = `Sää: ${name}`;
+        temperature.textContent = `Lämpötila: ${main.temp}°C`;
+        description.textContent = `Säätila: ${weather[0].description}`;
+        humidity.textContent = `Ilmankosteus: ${main.humidity}%`;
+        wind.textContent = `Tuulen nopeus: ${windData.speed} m/s`;
+
+        weatherInfo.style.display = 'block';
+
+        const weatherCondition = weather[0].main.toLowerCase();
+        const unsplashResponse = await fetch(
+          `https://api.unsplash.com/photos/random?query=${weatherCondition}&client_id=${UNSPLASH_API_KEY}`
+        );
+        if (!unsplashResponse.ok) throw new Error('Taustakuvaa ei löydy');
+        const unsplashData = await unsplashResponse.json();
+
+        document.body.style.backgroundImage = `url('${unsplashData.urls.full}')`;
+      } catch (error) {
+        alert(`Virhe: ${error.message}`);
+      }
+    });
+  </script>
+</body>
+</html>

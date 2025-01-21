@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    #search-section {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+    #weather-section {
+      margin: 20px;
+      color: white;
+    }
+    #map {
+      height: 400px;
+      margin: 20px 0;
+    }
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="search-section">
+  <h1>Weather Forecast</h1>
+  <input type="text" id="city-input" placeholder="Enter European city name" />
+  <button onclick="fetchWeather()">Get Weather</button>
+  <div id="error-message" style="color: red; margin-top: 10px;"></div>
+</div>
+
+<div id="weather-section">
+  <div id="current-weather"></div>
+  <canvas id="forecast-chart"></canvas>
+</div>
+
+<div id="map"></div>
+
+<script>
+  const OPENWEATHER_API_KEY = "7d9c22b83fb4c0a10df5128da56f0aaa"; // Vaihda API-avain
+  const PEXELS_API_KEY = "your_pexels_api_key"; // Vaihda API-avain
+  let map;
+
+  function initializeMap(lat, lon) {
+    if (map) {
+      map.remove();
+    }
+    map = L.map('map').setView([lat, lon], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`).addTo(map);
+  }
+
+  async function fetchWeather() {
+    const city = document.getElementById("city-input").value.trim();
+    const errorMessage = document.getElementById("error-message");
+    const currentWeatherDiv = document.getElementById("current-weather");
+
+    errorMessage.textContent = "";
+    currentWeatherDiv.innerHTML = "";
+
+    if (!city) {
+      errorMessage.textContent = "Please enter a city name.";
+      return;
+    }
+
+    try {
+      const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${OPENWEATHER_API_KEY}`);
+      if (!weatherResponse.ok) throw new Error("City not found");
+
+      const weatherData = await weatherResponse.json();
+      const { name, weather, main, coord } = weatherData;
+
+      currentWeatherDiv.innerHTML = `
+        <h2>Current Weather in ${name}</h2>
+        <p>Temperature: ${main.temp} °C</p>
+        <p>Weather: ${weather[0].description}</p>
+        <p>Humidity: ${main.humidity}%</p>
+        <p>Wind Speed: ${weatherData.wind.speed} m/s</p>
+        <img src="https://openweathermap.org/img/wn/${weather[0].icon}.png" alt="${weather[0].description}" />
+      `;
+
+      await setBackground(weather[0].main);
+
+      initializeMap(coord.lat, coord.lon);
+
+      await fetchForecast(coord.lat, coord.lon);
+
+    } catch (error) {
+      errorMessage.textContent = error.message;
+    }
+  }
+
+  async function fetchForecast(lat, lon) {
+    const forecastResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${OPENWEATHER_API_KEY}`);
+    const forecastData = await forecastResponse.json();
+
+    const labels = [];
+    const temperatures = [];
+    const rain = [];
+
+    forecastData.list.forEach((item, index) => {
+      if (index % 8 === 0) {
+        const date = new Date(item.dt * 1000);
+        labels.push(date.toLocaleDateString());
+        temperatures.push(item.main.temp);
+        rain.push(item.rain ? item.rain["3h"] || 0 : 0);
+      }
+    });
+
+    drawForecastChart(labels, temperatures, rain);
+  }
+
+  function drawForecastChart(labels, temperatures, rain) {
+    const ctx = document.getElementById("forecast-chart").getContext("2d");
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Temperature (°C)",
+            data: temperatures,
+            borderColor: "red",
+            fill: false
+          },
+          {
+            label: "Rain (mm)",
+            data: rain,
+            borderColor: "blue",
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  async function setBackground(weatherType) {
+    let query = "weather";
+    if (weatherType.toLowerCase().includes("cloud")) query = "cloudy";
+    if (weatherType.toLowerCase().includes("rain")) query = "rain";
+    if (weatherType.toLowerCase().includes("clear")) query = "sunny";
+
+    const pexelsResponse = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=1`, {
+      headers: { Authorization: PEXELS_API_KEY }
+    });
+    const pexelsData = await pexelsResponse.json();
+    if (pexelsData.photos.length > 0) {
+      document.body.style.backgroundImage = `url(${pexelsData.photos[0].src.original})`;
+    }
+  }
+</script>
+
+</body>
+</html>

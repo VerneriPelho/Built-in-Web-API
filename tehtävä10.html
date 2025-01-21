@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astronomy Picture of the Day</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+    }
+    .container {
+      padding: 20px;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+    .description {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NASA Astronomy Picture of the Day</h1>
+    <div id="content">
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = "SuGO7ljhuIBx1QqLDxCdttFA4FO3hCGabSzSnsgo";
+    const apodUrl = `https://api.nasa.gov/planetary/apod?api_key=${apiKey}`;
+
+    async function fetchApod() {
+      try {
+        const response = await fetch(apodUrl);
+        if (!response.ok) {
+          throw new Error("Unable to fetch APOD data.");
+        }
+        const data = await response.json();
+
+        const contentDiv = document.getElementById("content");
+        contentDiv.innerHTML = `
+          <img src="${data.url}" alt="${data.title}">
+          <h2>${data.title}</h2>
+          <p class="description">${data.explanation}</p>
+        `;
+
+        if (data.media_type === "video") {
+          contentDiv.innerHTML = `
+            <iframe width="560" height="315" src="${data.url}" frameborder="0" allowfullscreen></iframe>
+            <h2>${data.title}</h2>
+            <p class="description">${data.explanation}</p>
+          `;
+        }
+
+        document.body.style.backgroundColor = "#1a1a1a";
+      } catch (error) {
+        document.getElementById("content").innerHTML = `
+          <p class="error">Error loading data: ${error.message}</p>
+        `;
+      }
+    }
+
+    fetchApod();
+  </script>
+</body>
+</html>
